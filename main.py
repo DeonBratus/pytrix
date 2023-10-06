@@ -26,6 +26,15 @@ class Matrix:
         self._checkMtrx()
         self.elements = new_mtrx
 
+    def rmRows(self):
+        ...
+
+    def rmCols(self):
+        ...
+
+    def solve_SLE_2x2(self: tuple = ()):
+        return self[0][0] * self[1][1] - self[1][0] * self[0][1]
+
     def addCols(self, cols: tuple):
         new_mtrx = []
         for i in range(len(cols)):
@@ -51,3 +60,6 @@ m.show()
 
 m.addCols((12, 13, 15))
 m.show()
+m2 = Matrix((3, 4), (2, 3))
+a = Matrix.solve_SLE_2x2(((3, 4), (3, 1)))
+print(a)
