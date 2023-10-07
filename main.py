@@ -19,28 +19,64 @@ class Matrix:
             for j in range(self.size_y):
                 stroke.append(self.elements[j][i])
             new_mtrx.append(tuple(stroke))
+
         return tuple(new_mtrx)
 
     def addRows(self, row: tuple):
         new_mtrx = tuple((*self.elements, row))
+
         self._checkMtrx()
         self.elements = new_mtrx
-
-    def rmRows(self):
-        ...
-
-    def rmCols(self):
-        ...
-
-    def solve_SLE_2x2(self: tuple = ()):
-        return self[0][0] * self[1][1] - self[1][0] * self[0][1]
 
     def addCols(self, cols: tuple):
         new_mtrx = []
         for i in range(len(cols)):
             new_mtrx.append((*self.elements[i], cols[i]))
+
         self._checkMtrx()
         self.elements = tuple(new_mtrx)
+
+    def rmRows(self, num_rows):
+        new_mtrx = []
+        for i in range(len(self.elements)):
+            if i != num_rows:
+                new_mtrx.append(self.elements[i])
+
+        return Matrix(*new_mtrx)
+
+    def rmCols(self, num_cols):
+        new_mtrx = []
+        for i in range(len(self.elements)):
+            new_mtrx.append(list(self.elements[i]))
+        for i in range(len(new_mtrx)):
+            new_mtrx[i].pop(num_cols)
+
+        return Matrix(*new_mtrx)
+
+    def cross_mtrx_2x2(self):
+        return self.elements[0][0] * self.elements[1][1]\
+            - self.elements[0][1] * self.elements[1][0]
+
+    def solve_det(self): # сделать универсальным
+        a, m2 = 0, None
+        for i in range(self.size_x):
+            for j in range(self.size_y):
+                m2 = self.rmRows(0).rmCols(i)
+            a += self.elements[0][i] * m2.cross_mtrx_2x2() * ((-1) ** (i))
+        return a
+
+    def solve_alg_addings(self): # сделать универсальным
+
+        adding_mtrx = []
+        new_mtrx = []
+
+        for i in range(self.size_x):
+            for j in range(self.size_y):
+                m2 = self.rmRows(i).rmCols(j)
+                new_mtrx.append(((-1) ** (j + i)) * m2.cross_mtrx_2x2())
+            adding_mtrx.append(tuple(new_mtrx))
+            new_mtrx.clear()
+        return Matrix(*adding_mtrx)
 
     def _checkMtrx(self):
         for strings in self.elements:
@@ -52,14 +88,18 @@ class Matrix:
                     raise ValueError("Error: Matrix arguments can be int or float")
 
 
-m = Matrix((1, 2, 3), (4, 5, 6), (7, 8, 9), (10, 11, 12))
-m.show()
+def solve_SLE(A: Matrix, B: Matrix):
+    n, ans = 0, []
+    for i in range(A.size_y):
+        for j in range(A.size_x):
+            n += (A.solve_alg_addings().T()[i][j] * B.elements[0][j])
+        ans.append(n / A.solve_det())
+        n = 0
+    return ans
 
-m.addRows((12, 2.3, 15))
-m.show()
 
-m.addCols((12, 13, 15))
+m = Matrix((1, 2, 1), (2, -1, 1), (1, 1, 2))
+b = Matrix((-1, 3, 0))
+ans = solve_SLE(m, b)
 m.show()
-m2 = Matrix((3, 4), (2, 3))
-a = Matrix.solve_SLE_2x2(((3, 4), (3, 1)))
-print(a)
+print(ans)
