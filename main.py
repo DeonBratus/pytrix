@@ -8,9 +8,10 @@ class Matrix:
 
     def show(self):
         for i in self.elements:
+            print('|', end='\t')
             for j in i:
-                print(j, end='\t', sep='')
-            print('')
+                print(j, end='\t\t', sep=' ')
+            print('|')
 
     def T(self) -> tuple:
         new_mtrx = []
@@ -54,28 +55,37 @@ class Matrix:
         return Matrix(*new_mtrx)
 
     def cross_mtrx_2x2(self):
-        return self.elements[0][0] * self.elements[1][1]\
+        return self.elements[0][0] * self.elements[1][1] \
             - self.elements[0][1] * self.elements[1][0]
 
-    def solve_det(self): # сделать универсальным
-        a, m2 = 0, None
-        for i in range(self.size_x):
-            for j in range(self.size_y):
-                m2 = self.rmRows(0).rmCols(i)
-            a += self.elements[0][i] * m2.cross_mtrx_2x2() * ((-1) ** (i))
-        return a
+    def solve_det(self):
+        if self.size_x == 2 and self.size_y == 2:
+            return self.cross_mtrx_2x2()
 
-    def solve_alg_addings(self): # сделать универсальным
+        determinant = 0
+        for i in range(self.size_x):
+            submatrix = self.rmRows(0).rmCols(i)
+            determinant += self.elements[0][i] * submatrix.solve_det() * ((-1) ** i)
+        return determinant
+
+    def solve_alg_addings(self):
+        if self.size_x == 2 and self.size_y == 2:
+            adding_mtrx = []
+            for i in range(self.size_x):
+                adding_row = []
+                for j in range(self.size_y):
+                    m2 = self.rmRows(i).rmCols(j)
+                    adding_row.append(((-1) ** (j + i)) * m2.cross_mtrx_2x2())
+                adding_mtrx.append(tuple(adding_row))
+            return Matrix(*adding_mtrx)
 
         adding_mtrx = []
-        new_mtrx = []
-
         for i in range(self.size_x):
+            adding_row = []
             for j in range(self.size_y):
-                m2 = self.rmRows(i).rmCols(j)
-                new_mtrx.append(((-1) ** (j + i)) * m2.cross_mtrx_2x2())
-            adding_mtrx.append(tuple(new_mtrx))
-            new_mtrx.clear()
+                submatrix = self.rmRows(i).rmCols(j)
+                adding_row.append(((-1) ** (j + i)) * submatrix.solve_det())
+            adding_mtrx.append(tuple(adding_row))
         return Matrix(*adding_mtrx)
 
     def _checkMtrx(self):
@@ -83,7 +93,6 @@ class Matrix:
             if len(strings) != self.size_x:
                 raise ValueError("Error: Matrix arguments have inconsistent row lengths")
             for el in strings:
-                ...
                 if type(el) != int and type(el) != float:
                     raise ValueError("Error: Matrix arguments can be int or float")
 
@@ -98,8 +107,17 @@ def solve_SLE(A: Matrix, B: Matrix):
     return ans
 
 
-m = Matrix((1, 2, 1), (2, -1, 1), (1, 1, 2))
-b = Matrix((-1, 3, 0))
-ans = solve_SLE(m, b)
+print('A=')
+m = Matrix((1, 1, 2, 3), (1, 2, 3, -1), (3, -1, -1, -2), (2, 3, -1, -1))
+b = Matrix((1, -4, -4, -6))
 m.show()
-print(ans)
+print('\nB=')
+b.show()
+det = m.solve_det()
+print('_' * 50)
+print('определитель = ', det)
+print('обратная матрица алгебраических дополнений = ', end='\n')
+m.solve_alg_addings().show()
+print('_' * 50)
+ans = solve_SLE(m, b)
+print('Ответ:', *ans)
