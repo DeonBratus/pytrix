@@ -20,16 +20,16 @@ class Matrix:
             for j in range(self.size_y):
                 stroke.append(self.elements[j][i])
             new_mtrx.append(tuple(stroke))
-
+            
         return tuple(new_mtrx)
 
-    def addRows(self, row: tuple):
+    def add_rows(self, row: tuple):
         new_mtrx = tuple((*self.elements, row))
 
         self._checkMtrx()
         self.elements = new_mtrx
 
-    def addCols(self, cols: tuple):
+    def add_columns(self, cols: tuple):
         new_mtrx = []
         for i in range(len(cols)):
             new_mtrx.append((*self.elements[i], cols[i]))
@@ -37,7 +37,7 @@ class Matrix:
         self._checkMtrx()
         self.elements = tuple(new_mtrx)
 
-    def rmRows(self, num_rows):
+    def rm_rows(self, num_rows):
         new_mtrx = []
         for i in range(len(self.elements)):
             if i != num_rows:
@@ -45,7 +45,7 @@ class Matrix:
 
         return Matrix(*new_mtrx)
 
-    def rmCols(self, num_cols):
+    def rm_columns(self, num_cols):
         new_mtrx = []
         for i in range(len(self.elements)):
             new_mtrx.append(list(self.elements[i]))
@@ -64,7 +64,7 @@ class Matrix:
 
         determinant = 0
         for i in range(self.size_x):
-            submatrix = self.rmRows(0).rmCols(i)
+            submatrix = self.rm_rows(0).rm_columns(i)
             determinant += self.elements[0][i] * submatrix.solve_det() * ((-1) ** i)
         return determinant
 
@@ -74,7 +74,7 @@ class Matrix:
             for i in range(self.size_x):
                 adding_row = []
                 for j in range(self.size_y):
-                    m2 = self.rmRows(i).rmCols(j)
+                    m2 = self.rm_rows(i).rm_columns(j)
                     adding_row.append(((-1) ** (j + i)) * m2.cross_mtrx_2x2())
                 adding_mtrx.append(tuple(adding_row))
             return Matrix(*adding_mtrx)
@@ -83,7 +83,7 @@ class Matrix:
         for i in range(self.size_x):
             adding_row = []
             for j in range(self.size_y):
-                submatrix = self.rmRows(i).rmCols(j)
+                submatrix = self.rm_rows(i).rm_columns(j)
                 adding_row.append(((-1) ** (j + i)) * submatrix.solve_det())
             adding_mtrx.append(tuple(adding_row))
         return Matrix(*adding_mtrx)
@@ -98,6 +98,8 @@ class Matrix:
 
 
 def solve_SLE(A: Matrix, B: Matrix):
+    if A.size_x != B.size_y:
+        raise ValueError('Error:The number of columns of matrix A must be equal to the number of rows of matrix B.')
     n, ans = 0, []
     for i in range(A.size_y):
         for j in range(A.size_x):
@@ -109,7 +111,7 @@ def solve_SLE(A: Matrix, B: Matrix):
 
 print('A=')
 m = Matrix((1, 1, 2, 3), (1, 2, 3, -1), (3, -1, -1, -2), (2, 3, -1, -1))
-b = Matrix((1, -4, -4, -6))
+b = Matrix((1, -4, -4, -6, 0))
 m.show()
 print('\nB=')
 b.show()
