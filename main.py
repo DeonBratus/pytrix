@@ -1,3 +1,6 @@
+import matplotlib.pyplot as plt
+
+
 class Matrix:
     def __init__(self, *args: tuple):
         self.elements = args
@@ -8,31 +11,21 @@ class Matrix:
 
     def show(self):
         for i in self.elements:
-            print('|', end='\t')
             for j in i:
                 print(j, end='\t\t', sep=' ')
-            print('|')
-
-    def T(self) -> tuple:
-        new_mtrx = []
-        for i in range(self.size_x):
-            new_rows = []
-            for j in range(self.size_y):
-                new_rows.append(self.elements[j][i])
-            new_mtrx.append(tuple(new_rows))
-        return tuple(new_mtrx)
+            print()
 
     def add_rows(self, row: tuple):
         new_mtrx = tuple((*self.elements, row))
-        self.elements = new_mtrx
         self._checkMtrx()
+        self.elements = new_mtrx
 
     def add_columns(self, cols: tuple):
         new_mtrx = []
         for i in range(len(cols)):
             new_mtrx.append((*self.elements[i], cols[i]))
-        self.elements = tuple(new_mtrx)
         self._checkMtrx()
+        self.elements = tuple(new_mtrx)
 
     def rm_rows(self, num_rows):
         new_mtrx = []
@@ -43,46 +36,83 @@ class Matrix:
 
     def rm_columns(self, num_cols):
         new_mtrx = []
-
         for i in range(len(self.elements)):
             new_mtrx.append(list(self.elements[i]))
         for i in range(len(new_mtrx)):
             new_mtrx[i].pop(num_cols)
         return Matrix(*new_mtrx)
 
-    def _solve_mtrx_2x2_cross(self):
+    def transpose(self) -> tuple:
+        new_mtrx = []
+        for i in range(self.size_x):
+            stroke = []
+            for j in range(self.size_y):
+                stroke.append(self.elements[j][i])
+            new_mtrx.append(tuple(stroke))
+        return tuple(new_mtrx)
+
+    def cross_mtrx_2x2(self):
         return self.elements[0][0] * self.elements[1][1] \
             - self.elements[0][1] * self.elements[1][0]
 
     def find_determinant(self):
         if self.size_x == 2 and self.size_y == 2:
-            return self._solve_mtrx_2x2_cross()
+            return self.cross_mtrx_2x2()
 
         determinant = 0
         for i in range(self.size_x):
             submatrix = self.rm_rows(0).rm_columns(i)
-            determinant += self.elements[0][i] * submatrix.find_determinant() * ((-1) ** i)
+            determinant += self.elements[0][i] * submatrix.find_determinant() * ((-1) ** i)# <- тут рекурсия
         return determinant
 
-    def find_matrix_addition(self):
+    def find_mtrx_addition(self):
         if self.size_x == 2 and self.size_y == 2:
-            adding_mtrx = []
+            addition_mtrx = []
             for i in range(self.size_x):
                 adding_row = []
                 for j in range(self.size_y):
-                    m2 = self.rm_rows(i).rm_columns(j)
-                    adding_row.append(((-1) ** (j + i)) * m2._solve_mtrx_2x2_cross())
-                adding_mtrx.append(tuple(adding_row))
-            return Matrix(*adding_mtrx)
+                    clean_mtrx = self.rm_rows(i).rm_columns(j)
+                    adding_row.append(((-1) ** (j + i)) * clean_mtrx.cross_mtrx_2x2())
+                addition_mtrx.append(tuple(adding_row))
+            return Matrix(*addition_mtrx)
 
-        adding_mtrx = []
+        addition_mtrx = []
         for i in range(self.size_x):
             adding_row = []
             for j in range(self.size_y):
                 submatrix = self.rm_rows(i).rm_columns(j)
                 adding_row.append(((-1) ** (j + i)) * submatrix.find_determinant())
-            adding_mtrx.append(tuple(adding_row))
-        return Matrix(*adding_mtrx)
+            addition_mtrx.append(tuple(adding_row))
+        return Matrix(*addition_mtrx)
+
+    def solve_SLE(*self):
+        A = self[0]
+        B = self[1]
+        if A.size_x != B.size_x:
+            raise ValueError('Error:The number of columns of matrix A must be equal to the number of rows of matrix B.')
+        cell_value, answer_list = 0, []
+        for i in range(A.size_y):
+            for j in range(A.size_x):
+                cell_value += (A.find_mtrx_addition().transpose()[i][j] * B.elements[0][j])
+            answer_list.append(cell_value / A.find_determinant())
+            cell_value = 0
+        return answer_list
+
+    def find_near_square(*self, out_settings=None):
+
+        x = list(*self[0].elements)
+        y = list(*self[1].elements)
+
+        x_mean, y_mean = sum(x) / len(x), sum(y) / len(y)
+        line_slope = sum((xn - x_mean) * (xn - x_mean) for xn, yn in zip(x, y)) / sum((xn - x_mean) ** 2 for xn in x)
+        line_offset = y_mean - line_slope * x_mean
+
+        if out_settings == 's':
+            print(f'SLOPE {line_slope}, OFFSET {line_offset}')
+            plt.scatter(x, y)
+            plt.plot(x, [line_slope * xi + line_offset for xi in x], 'r')
+            plt.show()
+        return line_slope, line_offset
 
     def _checkMtrx(self):
         for strings in self.elements:
@@ -93,30 +123,16 @@ class Matrix:
                     raise ValueError("Error: Matrix arguments can be int or float")
 
 
-def solve_SLE(A: Matrix, B: Matrix):
-    if A.size_y != B.size_x:
-        raise ValueError(f'Error:The number of columns of matrix A must be equal to the number of rows of matrix B.'
-                         f'\nYour values: A -> {A.size_y} B -> {B.size_x}')
-    cell_mtrx_value, answer_list = 0, []
-    for i in range(A.size_y):
-        for j in range(A.size_x):
-            cell_mtrx_value += (A.find_matrix_addition().T()[i][j] * B.elements[0][j])
-        answer_list.append(cell_mtrx_value / A.find_determinant())
-        cell_mtrx_value = 0
-    return answer_list
-
-
-print('A=')
+# Cистемы Линейных Алгебраических Уравнений
 m = Matrix((1, 1, 2, 3), (1, 2, 3, -1), (3, -1, -1, -2), (2, 3, -1, -1))
 b = Matrix((1, -4, -4, -6))
 m.show()
-print('\nB=')
+print('')
 b.show()
-det = m.find_determinant()
-print('_' * 50)
-print('определитель = ', det)
-print('обратная матрица алгебраических дополнений = ', end='\n')
-m.find_matrix_addition().show()
-print('_' * 50)
-ans = solve_SLE(m, b)
-print('Ответ:', *ans)
+ans = Matrix.solve_SLE(m, b)
+print('\nОтвет:', *ans)
+
+# Метод ближайших квадратов
+m2 = Matrix((0, 1, 2, 3))
+m3 = Matrix((-1, 0.2, 0.9, 2.1))
+Matrix.find_near_square(m2, m3, out_settings='s')
